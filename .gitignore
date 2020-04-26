@@ -1,0 +1,6 @@
+.venv/
+.vscode/
+repos/
+data/
+__pycache__/
+failed_*.txt
