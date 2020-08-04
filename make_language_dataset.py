@@ -33,6 +33,7 @@ def clone_repository(fullname, branch, repo_dir):
     check_call('git init', shell=True, cwd=repo_dir)
     check_call(f'git remote add origin {git_url}', shell=True, cwd=repo_dir)
     check_call(f'git fetch origin {branch}', shell=True, cwd=repo_dir)
+    time.sleep(0.5)
     check_call(f'git checkout -t origin/{branch}', shell=True, cwd=repo_dir)
     repo = Repo(repo_dir)
 
@@ -78,6 +79,7 @@ def main(repo_file, from_index, repo_path, data_path):
             fullnames.append((fullname, branch))
     print(f'Start from {from_index}')
     failed_repos = []
+    dataset_cnt = 0
     total_cnt = 0
     f_failed = open(f'failed_{repo_file}', 'w') 
     try:
@@ -89,12 +91,14 @@ def main(repo_file, from_index, repo_path, data_path):
                 fullname = future_to_repo[future]
                 prog_bar.set_description(fullname)
                 try:
-                    total_cnt += future.result()
+                    current_dataset_cnt, current_total_cnt  = future.result()
+                    dataset_cnt += current_dataset_cnt
+                    total_cnt += current_total_cnt
                     # if not is_ok:
                     #     f_failed.write(fullname + '\n')
                     #     failed_repos.append(fullname)
                     #     continue
-                    prog_bar.set_postfix(cnt=total_cnt)
+                    prog_bar.set_postfix(cnt=dataset_cnt)
                 except Exception as exc:
                     
                     print(traceback.format_exc())
@@ -103,6 +107,7 @@ def main(repo_file, from_index, repo_path, data_path):
                     f_failed.write(fullname + '\n')
                     failed_repos.append(fullname)
     finally:
+        print(f'Dataset Count: {dataset_cnt}, Total Count: {total_cnt}')
         print(f'Failed {len(failed_repos)} repos')
         print('\n'.join(failed_repos))
 
@@ -114,15 +119,15 @@ def make_each_repo_dataset(fullname, branch, repo_path, data_path):
     success_tag = data_dir / 'success'
     if success_tag.exists():
         with open(success_tag) as f:
-            cnt = int(f.read())
-            return cnt
+            cnt, total_cnt = str(f.read()).split()
+            return int(cnt), int(total_cnt)
     writer = DataWriter(data_dir, 'w')
     clone_repository(fullname, branch, repo_dir)
-    cnt = generate_repo_dataset(fullname, branch, repo_dir, writer)
+    cnt, total_cnt = generate_repo_dataset(fullname, branch, repo_dir, writer)
     with open(success_tag, 'w') as f:
-        f.write(str(cnt))
+        f.write(f'{cnt} {total_cnt}')
     shutil.rmtree(repo_dir)
-    return cnt
+    return cnt, total_cnt
 
 
 def generate_repo_dataset(fullname, branch, repo_dir, writer):
@@ -194,7 +199,7 @@ def generate_repo_dataset(fullname, branch, repo_dir, writer):
         writer.write(index, origin_commit_msg, commit_msg, origin_line_diff, line_diff, origin_word_diff, word_diff)
         current_cnt+=1
     print(f'{fullname}:  {current_cnt}/{total_cnt}')
-    return current_cnt
+    return current_cnt, total_cnt
 
 def get_line_diff(repo_dir, sha):
     try:

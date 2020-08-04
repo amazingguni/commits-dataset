@@ -4,6 +4,7 @@ from nltk.corpus import wordnet
 
 no_english_pattern = re.compile(r'[^\sa-zA-Z0-9.!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~]')
 download('averaged_perceptron_tagger')
+download('wordnet')
 
 def has_no_english(s):
     return bool(no_english_pattern.search(s))
@@ -18,7 +19,11 @@ def remove_redundant_white_space(s):
     return re.sub(r'\s+', ' ', s)
 
 def remove_tag_issue_number(s):
-    return re.sub(r'(\(#\d+\))|(\[#\d+\])|(Issue #\d+:)|({#\d+})|(^\[.+\])|(^\S{1,10}:)|(^\S+-\d+:? ?:?)', '', s)
+    return re.sub(r'(\w+ \d+:)|([Ff]ix(es)? #?\d+)|([Bb]ug: ?\d+)|(\([Bb]ug \d+\))|(\([Ii]ssue #?\d+\))|(\([Cc]loses? #\d+\))|(#\d+-)|(\(#\d+\))|(\[#\d+\])|([Ii]ssues? #\d+:?)|({#\d+})|(^\[.+\])|(^\S{1,10}:)|(^\S+-\d+:? ?:?)|(\(cherry picked from commit \S+\))|([Cc]loses? gh-\d+)', '', s)
+
+def remove_first_special_charactor(s):
+    return re.sub(r'\s*[.:\-,\/\*]\s+', '', s)
+
 
 
 def remove_http_urls(s):
@@ -40,10 +45,18 @@ def overlap_two_seq(a, b):
     return bool(set(a) & set(b))
 
 def starts_with_verb(word_list):
-    word_list = ['He'] + word_list
-    pos_tags = pos_tag(word_list)
+    if not word_list:
+        return False
+    # word_list = ['He'] + word_list
+    pos_tags = pos_tag(['He'] + word_list)
     is_verb = pos_tags[1][1].startswith('V')
-    return is_verb
+    if is_verb:
+        return True
+    pos_tags = pos_tag(['You'] + word_list)
+    is_verb = pos_tags[1][1].startswith('V')
+    if is_verb:
+        return True
+    return False
     
 def get_wordnet_pos(treebank_tag):
     if treebank_tag.startswith('J'):

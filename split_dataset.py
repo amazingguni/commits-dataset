@@ -38,8 +38,7 @@ def main(preprocessed_dir, prefix):
     dataset_dir.mkdir(exist_ok=True)
     line_dir = dataset_dir / 'line'
     word_dir = dataset_dir / 'word'
-    line_dir.mkdir(exist_ok=True)
-    word_dir.mkdir(exist_ok=True)
+    
     filename_prefix = Path(preprocessed_dir).parent.name
 
     write_dataset(line_dir, word_dir, filename_prefix, train_dataset, 'train')
@@ -49,6 +48,8 @@ def main(preprocessed_dir, prefix):
 
         
 def write_dataset(line_dir, word_dir, filename_prefix, dataset, dataset_type='train'):
+    line_dir.mkdir(exist_ok=True)
+    word_dir.mkdir(exist_ok=True)
     f_line_index = open(line_dir / f'{filename_prefix}.{dataset_type}.index', 'w')
     f_line_target = open(line_dir / f'{filename_prefix}.{dataset_type}.target', 'w')
     f_line_source = open(line_dir / f'{filename_prefix}.{dataset_type}.source', 'w')
@@ -65,6 +66,28 @@ def write_dataset(line_dir, word_dir, filename_prefix, dataset, dataset_type='tr
         f_word_index.write(index.strip() + '\n')
         f_word_target.write(target.strip() + '\n')
         f_word_source.write(word_diff.strip() + '\n')
+    
+    line_dir = line_dir.parents[0] / 'line_lower'
+    word_dir = word_dir.parents[0] / 'word_lower'
+    line_dir.mkdir(exist_ok=True)
+    word_dir.mkdir(exist_ok=True)
+    
+    f_line_index = open(line_dir / f'{filename_prefix}.{dataset_type}.index', 'w')
+    f_line_target = open(line_dir / f'{filename_prefix}.{dataset_type}.target', 'w')
+    f_line_source = open(line_dir / f'{filename_prefix}.{dataset_type}.source', 'w')
+
+    f_word_index = open(word_dir / f'{filename_prefix}.{dataset_type}.index', 'w')
+    f_word_target = open(word_dir / f'{filename_prefix}.{dataset_type}.target', 'w')
+    f_word_source = open(word_dir / f'{filename_prefix}.{dataset_type}.source', 'w')
+
+    for index, target, line_diff, word_diff in dataset:
+        f_line_index.write(index.strip() + '\n')
+        f_line_target.write(target.lower().strip() + '\n')
+        f_line_source.write(line_diff.lower().strip() + '\n')
+
+        f_word_index.write(index.strip() + '\n')
+        f_word_target.write(target.lower().strip() + '\n')
+        f_word_source.write(word_diff.lower().strip() + '\n')
 
 
 if __name__ == '__main__':
